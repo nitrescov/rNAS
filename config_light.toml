@@ -1,0 +1,18 @@
+# Interface language and optional server name (owner):
+language = "de"
+owner = ""
+
+# Path to store all persistent files:
+storage_path = ""
+
+# Interface appearance:
+background = "#DDDDDD"
+foreground = "#222222"
+accent_background = "#88DD3A"
+accent_foreground = "#222222"
+shadows = "#808080"
+errors = "#FF4D33"
+input = "#ECECEC"
+
+# Sleep time between cleaning of the tmp directory (in seconds, default 24h):
+clean_tmp_files = 86400

@@ -1,0 +1,4 @@
+# Prevent uploading certificate files
+*.crt
+*.csr
+*.key

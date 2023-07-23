@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>rNAS Login</title>
+</head>
+<body style="background-color:{{BG}}">
+    <h1 style="font-family:sans-serif; font-size:24px; text-align:center; font-weight:bold; color:{{AFG}}; background-color:{{ABG}};
+            border-radius:10px; margin:16px; margin-bottom:32px; padding:8px; box-shadow:2px 2px 4px {{SH}}">
+        - {{OW}} rNAS -
+    </h1>
+    <form action="/" method="post" style="margin:auto; width:450px; height:250px; text-align:center;
+            border-style:solid; border-color:{{SH}}; border-width:2px; box-shadow:0px 0px 5px {{SH}}">
+        <input id="name" name="name" type="text" style="font-family:sans-serif; font-size:14px; text-align:left; width:300px;
+                color:{{FG}}; background-color:{{IN}}; border-radius:4px; border-style:hidden; margin-top:24px; margin-bottom:8px; padding:8px"
+                placeholder="name" />
+        <br>
+        <label for="name" style="font-family:sans-serif; font-size:12px; text-align:left; display:inline-block; width:300px; color:{{FG}}; background-color:{{BG}}">
+            Username
+        </label><br>
+        <input id="password" name="password" type="password" style="font-family:sans-serif; font-size:14px; text-align:left; width:300px;
+                color:{{FG}}; background-color:{{IN}}; border-radius:4px; border-style:hidden; margin-top:24px; margin-bottom:8px; padding:8px"
+                placeholder="password" />
+        <br>
+        <label for="password" style="font-family:sans-serif; font-size:12px; text-align:left; display:inline-block; width:300px; color:{{FG}}; background-color:{{BG}}">
+            Password
+        </label><br>
+        <input value="Login" type="submit" style="font-family:sans-serif; font-size:14px; text-align:center; width:150px;
+                color:{{AFG}}; background-color:{{ABG}}; border-radius:4px; border-style:hidden; margin-top:24px; padding:8px; cursor:pointer; box-shadow:2px 2px 4px {{SH}}" />
+    </form>
+</body>
+</html>

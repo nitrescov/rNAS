@@ -1,0 +1,3 @@
+# Prevent uploading any files from this sample user directory
+*
+!.gitignore
