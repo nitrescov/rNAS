@@ -35,11 +35,12 @@ use sha2::{Sha384, Digest};
 use serde::{Deserialize, Serialize};
 use rocket::form::Form;
 use rocket::response::Redirect;
+use rocket::http::uri::Segments;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::content::RawHtml;
 use rocket::{Rocket, Build, FromForm, Either};
+use rocket::http::uri::fmt::Path as RocketPath;
 use rocket::fs::{FileServer, NamedFile, TempFile};
-use rocket::mtls::oid::asn1_rs::nom::AsChar;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Config {
@@ -170,7 +171,7 @@ fn login(cookies: &CookieJar<'_>, data: Option<Form<LoginData>>) -> Either<Redir
                     let mut cookie = Cookie::new("user_hash", format!("{:x}", hash_value));
                     cookie.set_expires(None);
                     cookies.add_private(cookie);
-                    return Either::Left(Redirect::to(uri!(list_directory(Path::new(&login_data.name)))))
+                    return Either::Left(Redirect::to(format!("/files/{}", login_data.name)))
                 }
             }
             Either::Right(RawHtml(LOGIN_FAILED.to_owned()))
@@ -179,7 +180,8 @@ fn login(cookies: &CookieJar<'_>, data: Option<Form<LoginData>>) -> Either<Redir
 }
 
 #[get("/files/<path..>")]
-fn list_directory(cookies: &CookieJar<'_>, path: PathBuf) -> RawHtml<String> {
+fn list_directory(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> RawHtml<String> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(username) = check_login(cookies, &path) {
         if check_path(&path).1 {
 
@@ -281,7 +283,7 @@ fn list_directory(cookies: &CookieJar<'_>, path: PathBuf) -> RawHtml<String> {
             let mut percent = String::new();
             for byte in storage_cmd.into_iter() {
                 match byte {
-                    48u8..=57u8 => percent.push(byte.as_char()),
+                    48u8..=57u8 => percent.push(byte as char),
                     _ => continue
                 }
             }
@@ -375,7 +377,8 @@ fn list_directory(cookies: &CookieJar<'_>, path: PathBuf) -> RawHtml<String> {
 }
 
 #[get("/download/<path..>")]
-async fn download_file(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Option<NamedFile>, RawHtml<String>> {
+async fn download_file(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> Either<Option<NamedFile>, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(_username) = check_login(cookies, &path) {
         if check_path(&path).0 {
             Either::Left(NamedFile::open(STORAGE.join(&path)).await.ok())
@@ -386,7 +389,8 @@ async fn download_file(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Option<
 }
 
 #[get("/zip/<path..>")]
-async fn download_folder(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Option<NamedFile>, RawHtml<String>> {
+async fn download_folder(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> Either<Option<NamedFile>, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(_username) = check_login(cookies, &path) {
         if check_path(&path).1 {
             let hash_value = format!("{:x}", Md5::digest(path.to_str().expect("Invalid path encoding (expected UTF-8)")));
@@ -415,13 +419,14 @@ async fn download_folder(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Optio
 }
 
 #[get("/delete_dir/<path..>")]
-fn delete_dir(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Redirect, RawHtml<String>> {
+fn delete_dir(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> Either<Redirect, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(username) = check_login(cookies, &path) {
         if check_path(&path).1 {
             let parent_path = path.parent().expect("Cannot extract parent path");
-            if parent_path == Path::new("") { return Either::Left(Redirect::to(uri!(list_directory(Path::new(&username))))) }
+            if parent_path == Path::new("") { return Either::Left(Redirect::to(format!("/files/{}", username))) }
             remove_dir_all(STORAGE.join(&path)).expect("Cannot delete directory (permission error)");
-            Either::Left(Redirect::to(uri!(list_directory(parent_path))))
+            Either::Left(Redirect::to(format!("/files/{}", parent_path.to_str().expect("Invalid path encoding (expected UTF-8)"))))
         }
         else { Either::Right(RawHtml(NO_DIRECTORY.to_owned())) }
     }
@@ -429,13 +434,14 @@ fn delete_dir(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Redirect, RawHtm
 }
 
 #[get("/delete_file/<path..>")]
-fn delete_file(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Redirect, RawHtml<String>> {
+fn delete_file(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> Either<Redirect, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(username) = check_login(cookies, &path) {
         if check_path(&path).0 {
             let parent_path = path.parent().expect("Cannot extract parent path");
-            if parent_path == Path::new("") { return Either::Left(Redirect::to(uri!(list_directory(Path::new(&username))))) }
+            if parent_path == Path::new("") { return Either::Left(Redirect::to(format!("/files/{}", username))) }
             remove_file(STORAGE.join(&path)).expect("Cannot delete file (permission error)");
-            Either::Left(Redirect::to(uri!(list_directory(parent_path))))
+            Either::Left(Redirect::to(format!("/files/{}", parent_path.to_str().expect("Invalid path encoding (expected UTF-8)"))))
         }
         else { Either::Right(RawHtml(NO_FILE.to_owned())) }
     }
@@ -443,11 +449,12 @@ fn delete_file(cookies: &CookieJar<'_>, path: PathBuf) -> Either<Redirect, RawHt
 }
 
 #[post("/new_dir/<path..>", data = "<data>")]
-fn create_directory(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<FolderName>>) -> Either<Redirect, RawHtml<String>> {
+fn create_directory(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>, data: Option<Form<FolderName>>) -> Either<Redirect, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(username) = check_login(cookies, &path) {
         if check_path(&path).1 {
             match data {
-                None => Either::Left(Redirect::to(uri!(list_directory(Path::new(&username))))),
+                None => Either::Left(Redirect::to(format!("/files/{}", username))),
                 Some(content) => {
                     // Remove some unwanted characters from the directory name (custom selection)
                     let mut new_dir = content.folder_name
@@ -469,7 +476,7 @@ fn create_directory(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<Fo
                     let new_path = STORAGE.join(&path).join(&new_dir);
                     if !new_path.try_exists().expect("Cannot access files metadata (permission error)") {
                         create_dir(new_path).expect("Cannot create directory (permission error)");
-                        Either::Left(Redirect::to(uri!(list_directory(path))))
+                        Either::Left(Redirect::to(format!("/files/{}", path.to_str().expect("Invalid path encoding (expected UTF-8)"))))
                     }
                     else { Either::Right(RawHtml(IS_DIRECTORY.to_owned())) }
                 }
@@ -481,11 +488,12 @@ fn create_directory(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<Fo
 }
 
 #[post("/unpack/<path..>", data = "<data>")]
-fn unpack_archive(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<ArchiveName>>) -> Either<Redirect, RawHtml<String>> {
+fn unpack_archive(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>, data: Option<Form<ArchiveName>>) -> Either<Redirect, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(username) = check_login(cookies, &path) {
         if check_path(&path).1 {
             match data {
-                None => Either::Left(Redirect::to(uri!(list_directory(Path::new(&username))))),
+                None => Either::Left(Redirect::to(format!("/files/{}", username))),
                 Some(content) => {
                     // Remove some unwanted characters from the file name (custom selection)
                     let mut new_dir = content.archive_name
@@ -522,7 +530,7 @@ fn unpack_archive(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<Arch
                                      .arg(target_path.to_str().expect("Invalid path encoding (expected UTF-8)"));
                         match unzip_command.status() {
                             Err(_) => Either::Right(RawHtml(UNPACK_ERROR.to_owned())),
-                            Ok(_) => Either::Left(Redirect::to(uri!(list_directory(path))))
+                            Ok(_) => Either::Left(Redirect::to(format!("/files/{}", path.to_str().expect("Invalid path encoding (expected UTF-8)"))))
                         }
                     }
                 }
@@ -534,7 +542,8 @@ fn unpack_archive(cookies: &CookieJar<'_>, path: PathBuf, data: Option<Form<Arch
 }
 
 #[post("/upload/<path..>", format = "multipart/form-data", data = "<data>")]
-async fn upload_file(cookies: &CookieJar<'_>, path: PathBuf, mut data: Form<Upload<'_>>) -> Either<Redirect, RawHtml<String>> {
+async fn upload_file(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>, mut data: Form<Upload<'_>>) -> Either<Redirect, RawHtml<String>> {
+    let path = path.to_path_buf(true).unwrap();
     if let Some(_username) = check_login(cookies, &path) {
         if check_path(&path).1 {
             // Remove some unwanted characters from the file name (custom selection,
@@ -568,11 +577,11 @@ async fn upload_file(cookies: &CookieJar<'_>, path: PathBuf, mut data: Form<Uplo
             else {
                 // Try persisting the file to the given path
                 match data.file.persist_to(STORAGE.join(&path).join(&file_name)).await {
-                    Ok(_) => Either::Left(Redirect::to(uri!(list_directory(path)))),
+                    Ok(_) => Either::Left(Redirect::to(format!("/files/{}", path.to_str().expect("Invalid path encoding (expected UTF-8)")))),
                     // If this failed, try to copy the temporary file to the given path
                     // (e.g. the temp path is on a different logical device - see persist_to() docs)
                     Err(_) => match data.file.move_copy_to(STORAGE.join(&path).join(&file_name)).await {
-                        Ok(_) => Either::Left(Redirect::to(uri!(list_directory(path)))),
+                        Ok(_) => Either::Left(Redirect::to(format!("/files/{}", path.to_str().expect("Invalid path encoding (expected UTF-8)")))),
                         Err(_) => Either::Right(RawHtml(UPLOAD_ERROR.to_owned()))
                     }
                 }
