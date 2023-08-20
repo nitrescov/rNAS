@@ -158,7 +158,7 @@ fn check_path(path: &PathBuf) -> (bool, bool) {
 fn home() -> RawHtml<String> { RawHtml(HOME.to_owned()) }
 
 #[get("/favicon.ico")]
-fn favicon() -> Redirect { Redirect::to(uri!("/icons/favicon.ico")) }
+async fn favicon() -> Option<NamedFile> { NamedFile::open(Path::new("icons/favicon.ico")).await.ok() }
 
 #[post("/", data = "<data>")]
 fn login(cookies: &CookieJar<'_>, data: Option<Form<LoginData>>) -> Either<Redirect, RawHtml<String>> {
@@ -296,10 +296,10 @@ fn list_directory(cookies: &CookieJar<'_>, path: Segments<'_, RocketPath>) -> Ra
                     <meta charset=\"utf-8\"> \
                     <title>{8} {20}</title> \
                 </head> \
-                <body style=\"background-color:{1}\"> \
-                <div style=\"background-color:{1}; position:sticky; top:16px; width:100%; padding-bottom:8px\"> \
+                <body style=\"background-color:{1}; margin-top:0px\"> \
+                <div style=\"background-color:{1}; position:sticky; top:0px; width:100%; padding-top:16px; padding-bottom:8px\"> \
                     <h1 style=\"font-family:sans-serif; font-size:24px; text-align:center; font-weight:bold; color:{2}; background-color:{3}; \
-                            border-radius:10px; margin:16px; margin-bottom:8px; padding:8px; box-shadow:2px 2px 4px {4}\"> \
+                            border-radius:10px; margin:16px; margin-top:0px; margin-bottom:8px; padding:8px; box-shadow:2px 2px 4px {4}\"> \
                         ~ / {26} \
                     </h1> \
                     <div style=\"text-align:center\"> \
