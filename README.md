@@ -114,6 +114,8 @@ auch mit den Standardeinstellungen lauffähig.
 | errors            | RGB-Wert für Fehlermeldungen                                                                                                                                   |
 | input             | RGB-Wert für die Hervorhebung von Eingabefeldern                                                                                                               |
 | clean_tmp_files   | Intervall zur Bereinigung des `tmp/`-Ordners (in Sekunden, 86400 = 24 Stunden)                                                                                 |
+| whitelist         | Erlaubter Zeichensatz für Ordner- und Dateinamen                                                                                                               |
+| name_length       | Maximale Länge von Ordner- und Dateinamen                                                                                                                      |
 
 - `Rocket.toml` ([mehr Informationen](https://rocket.rs/v0.5-rc/guide/configuration/)):
 
@@ -277,6 +279,8 @@ should also run with the default settings.
 | errors            | RGB value for error messages                                                                                                                      |
 | input             | RGB value for the highlighting of input fields                                                                                                    |
 | clean_tmp_files   | Interval for cleaning up the `tmp/` folder (in seconds, 86400 = 24 hours)                                                                         |
+| whitelist         | Allowed characters for directory and file names                                                                                                   |
+| name_length       | Maximum length of directory and file names                                                                                                        |
 
 - `Rocket.toml` ([more information](https://rocket.rs/v0.5-rc/guide/configuration/)):
 
