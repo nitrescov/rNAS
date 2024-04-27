@@ -16,3 +16,7 @@ input = "#ECECEC"
 
 # Sleep time between cleaning of the tmp directory (in seconds, default 24h):
 clean_tmp_files = 86400
+
+# Allowed characters and length of directory and file names:
+whitelist = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789äöüÄÖÜß!()=+-_., "
+name_length = 128

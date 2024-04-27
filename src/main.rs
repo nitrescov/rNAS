@@ -78,6 +78,8 @@ struct Config {
     errors: String,
     input: String,
     clean_tmp_files: u64,
+    whitelist: String,
+    name_length: usize,
 }
 
 #[derive(FromForm)]
@@ -175,6 +177,28 @@ fn check_login(cookies: &CookieJar<'_>, path: &PathBuf) -> Option<String> {
 fn check_path(path: &PathBuf) -> (bool, bool) {
     let full_path = STORAGE.join(&path);
     (full_path.is_file(), full_path.is_dir())
+}
+
+fn sanitize_string(input: &str) -> String {
+    let mut temp_string = String::new();
+    // Check whether the input string contains any characters not listed in the whitelist and add all valid characters to the return string
+    for c in input.chars() {
+        if !CONFIG.whitelist.chars().all(|w| w != c) {
+            temp_string.push(c);
+        }
+    }
+    // Remove leading and trailing whitespaces or dots
+    while temp_string.starts_with(" ") {
+        temp_string = temp_string[1..].to_owned();
+    }
+    while temp_string.ends_with(" ") || temp_string.ends_with(".") {
+        temp_string = temp_string[..temp_string.len() - 1].to_owned();
+    }
+    // Restrict the string length as specified in the config
+    if temp_string.len() > CONFIG.name_length {
+        temp_string = temp_string[temp_string.len() - CONFIG.name_length..].to_owned();
+    }
+    temp_string
 }
 
 #[get("/")]
@@ -480,21 +504,7 @@ fn create_directory(cookies: &CookieJar<'_>, path: DotPathBuf, data: Option<Form
                 None => Either::Left(Redirect::to(uri!(list_directory(&username)))),
                 Some(content) => {
                     // Remove some unwanted characters from the directory name (custom selection)
-                    let mut new_dir = content.folder_name
-                        .replace("/", "")
-                        .replace("<", "")
-                        .replace(">", "")
-                        .replace(":", "")
-                        .replace("\\", "")
-                        .replace("|", "")
-                        .replace("?", "")
-                        .replace("*", "");
-                    while new_dir.starts_with(" ") {
-                        new_dir = new_dir[1..].to_owned();
-                    }
-                    while new_dir.ends_with(" ") {
-                        new_dir = new_dir[..new_dir.len() - 1].to_owned();
-                    }
+                    let mut new_dir = sanitize_string(&content.folder_name);
                     if new_dir.len() == 0 { new_dir = "new_directory".to_owned(); }
                     let new_path = STORAGE.join(&path).join(&new_dir);
                     if !new_path.try_exists().expect("Cannot access files metadata (permission error)") {
@@ -519,21 +529,7 @@ fn unpack_archive(cookies: &CookieJar<'_>, path: DotPathBuf, data: Option<Form<A
                 None => Either::Left(Redirect::to(uri!(list_directory(&username)))),
                 Some(content) => {
                     // Remove some unwanted characters from the file name (custom selection)
-                    let mut new_dir = content.archive_name
-                        .replace("/", "")
-                        .replace("<", "")
-                        .replace(">", "")
-                        .replace(":", "")
-                        .replace("\\", "")
-                        .replace("|", "")
-                        .replace("?", "")
-                        .replace("*", "");
-                    while new_dir.starts_with(" ") {
-                        new_dir = new_dir[1..].to_owned();
-                    }
-                    while new_dir.ends_with(" ") {
-                        new_dir = new_dir[..new_dir.len() - 1].to_owned();
-                    }
+                    let new_dir = sanitize_string(&content.archive_name);
                     if new_dir.len() < 4 || new_dir[new_dir.len() - 4..].to_lowercase() != ".zip" {
                         return Either::Right(RawHtml(NO_FILE.to_owned()))
                     }
@@ -574,15 +570,7 @@ async fn upload_file(cookies: &CookieJar<'_>, path: DotPathBuf, mut data: Form<U
             let mut file_name = match data.file.raw_name() {
                 None => return Either::Right(RawHtml(UPLOAD_ERROR.to_owned())),
                 Some(raw_name) => {
-                    raw_name.dangerous_unsafe_unsanitized_raw().as_str()
-                        .replace("/", "")
-                        .replace("<", "")
-                        .replace(">", "")
-                        .replace(":", "")
-                        .replace("\\", "")
-                        .replace("|", "")
-                        .replace("?", "")
-                        .replace("*", "")
+                    sanitize_string(raw_name.dangerous_unsafe_unsanitized_raw().as_str())
                 }
             };
             while file_name.starts_with(" ") {
