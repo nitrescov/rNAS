@@ -1,5 +1,5 @@
 [default]
-port = 8080
+port = 8443
 # Note: Make sure to generate a new random key for production use!
 secret_key = "e/33o7rRLoNpNn/xL+rdww37tb+YfvhUUtpF1H1bqu4="
 
