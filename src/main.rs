@@ -216,6 +216,8 @@ fn login(cookies: &CookieJar<'_>, data: Option<Form<LoginData>>) -> Either<Redir
             for entry in get_users() {
                 if format!("{:x}", hash_value) == entry.0 {
                     let mut cookie = Cookie::new("user_hash", format!("{:x}", hash_value));
+                    cookie.set_http_only(true);
+                    cookie.set_secure(true);
                     cookie.set_expires(None);
                     cookies.add_private(cookie);
                     return Either::Left(Redirect::to(uri!(list_directory(&login_data.name))))
