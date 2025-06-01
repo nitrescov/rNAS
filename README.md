@@ -8,9 +8,9 @@
 
 ## Generelle Informationen
 
-rNAS ist ein extrem simpler, leichtgewichtiger NAS-Server, der sich für den Einsatz in einer privaten Umgebung eignet. 
-Das Ziel der zugehörigen Weboberfläche ist, das NAS ohne betriebssystemspezifische Integrationen von möglichst jedem 
-internetfähigen Gerät erreichen zu können.
+rNAS ist ein extrem simpler, leichtgewichtiger NAS-Server, der sich für den Einsatz in einer nicht öffentlich zugänglichen
+Umgebung eignet. Das Ziel der zugehörigen Weboberfläche ist, das NAS ohne betriebssystemspezifische Integrationen von
+möglichst jedem internetfähigen Gerät erreichen zu können.
 
 Zusätzlich soll der Code besonders kurz und übersichtlich gehalten werden, damit jederzeit nachvollziehbar bleibt, 
 was an welcher Stelle mit den verarbeiteten Daten passiert, sowie, um eine einfache Erweiterbarkeit zu gewährleisten. 
@@ -24,9 +24,8 @@ Für den Server eignet sich jede Hardware, auf der Linux installiert und der Rus
 Eine Liste der kompatiblen Architekturen ist [hier](https://doc.rust-lang.org/nightly/rustc/platform-support.html) zu 
 finden.
 
-Wie beim Vorgänger, [Python-RaspiNAS](https://github.com/nitrescov/Python-RaspiNAS), gibt es für das Projekt keinen 
-festen Update- oder Release-Zyklus. Allerdings freue ich mich jederzeit über Verbesserungsvorschläge, sonstige 
-Anregungen oder Kritik.
+Für das Projekt gibt es keinen festen Update- oder Release-Zyklus. Allerdings freue ich mich jederzeit über
+Verbesserungsvorschläge, sonstige Anregungen oder Kritik.
 
 ## Voraussetzungen
 
@@ -102,7 +101,7 @@ auch mit den Standardeinstellungen lauffähig.
 - `config.toml`:
 
 | Parameter         | Wert (Erklärung)                                                                                                                                               |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | language          | Einstellung der Sprache (`de` oder `en`)                                                                                                                       |
 | owner             | Servername (z.B. Name des Besitzers)                                                                                                                           |
 | storage_path      | Speicherpfad der Nutzerverzeichnisse und des `tmp/`-Ordners                                                                                                    |
@@ -119,14 +118,16 @@ auch mit den Standardeinstellungen lauffähig.
 
 - `Rocket.toml` ([mehr Informationen](https://rocket.rs/v0.5-rc/guide/configuration/)):
 
-| Parameter      | Wert (Erklärung)                                                                                                                                                                                                   |
-|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| port           | Port für die HTTPS-Kommunikation (normalerweise 443, allerdings kann der Server dann nur mit root-Rechten ausgeführt werden)                                                                                       |
-| secret_key     | Schlüssel für die Sicherung des Anmelde-Cookies (**darf nicht auf dem Standardwert belassen werden!**)                                                                                                             |
-| default.limits | Maximale Größe von ausgetauschten Daten (siehe [Dokumentation](https://api.rocket.rs/v0.5-rc/rocket/data/struct.Limits.html#built-in-limits), SI-Einheiten zur Basis 10 (z.B. 32kB) oder zur Basis 2 (z.B. 32KiB)) |
-| certs          | Pfad der SSL-Zertifikatsdatei                                                                                                                                                                                      |
-| key            | Pfad der SSL-Schlüsseldatei                                                                                                                                                                                        |
-| address        | IP-Adresse, von der Anfragen empfangen werden (`0.0.0.0` - alle, `127.0.0.1` - nur lokaler Rechner)                                                                                                                |
+| Parameter          | Wert (Erklärung)                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| port               | Port für die HTTPS-Kommunikation (normalerweise 443, allerdings kann der Server dann nur mit root-Rechten ausgeführt werden)                                                                                       |
+| secret_key         | Schlüssel für die Sicherung des Anmelde-Cookies (**darf nicht auf dem Standardwert belassen werden!**)                                                                                                             |
+| default.limits     | Maximale Größe von ausgetauschten Daten (siehe [Dokumentation](https://api.rocket.rs/v0.5-rc/rocket/data/struct.Limits.html#built-in-limits), SI-Einheiten zur Basis 10 (z.B. 32kB) oder zur Basis 2 (z.B. 32KiB)) |
+| certs              | Pfad der SSL-Zertifikatsdatei                                                                                                                                                                                      |
+| key                | Pfad der SSL-Schlüsseldatei                                                                                                                                                                                        |
+| address            | IP-Adresse, von der Anfragen empfangen werden (`0.0.0.0` - alle, `127.0.0.1` - nur lokaler Rechner)                                                                                                                |
+| ip_header          | HTTP-Header, aus dem der Server in einem Reverse-Proxy-Setup die tatsächliche Client-IP auslesen kann                                                                                                              |
+| proxy_proto_header | HTTP-Header, anhand dessen der Server in einem Reverse-Proxy-Setup feststellen kann, ob die Verbindung verschlüsselt ist                                                                                           |
 
 ### 4. Erzeugen eines neuen Sicherheitsschlüssels (secret_key):
 
@@ -136,9 +137,23 @@ Der Schlüssel kann mit folgendem Befehl generiert werden:
 openssl rand -base64 32
 ```
 
-### 5. Erstellen eines selbst-signierten SSL-Zertifikates (mehr Details bei [Baeldung](https://www.baeldung.com/openssl-self-signed-cert)):
+### 5. Nutzung einer sicheren Verbindung mittels TLS
 
-Zunächst muss OpenSSL installiert sein (`sudo apt install openssl`/`sudo pacman -S openssl`). 
+#### 5.1 Option 1: Verwendung eines Reverse-Proxy-Servers
+
+Für eine sichere, verschlüsselte Verbindung zum Server wird die Verwendung eines Reverse-Proxys empfehlenswert.
+
+Für eine besonders einfache Einrichtung wird eine Beispielkonfiguration für den [Caddy-Server](https://caddyserver.com/docs/) unter `proxy/Caddyfile`
+mitgeliefert. Diese kann nach der Installation von Caddy und der **Eintragung der eigenen Domain** nach `/etc/caddy/Caddyfile` kopiert werden.
+
+Die Beispielkonfiguration kann auch als Vorlage für die Einrichtung eines anderen Proxy-Servers wie NGINX dienen.
+
+#### 5.2 Option 2: Erstellen eines selbst-signierten SSL-Zertifikates (mehr Details bei [Baeldung](https://www.baeldung.com/openssl-self-signed-cert)):
+
+Ist die Verwendung eines Reverse-Proxys nicht erwünscht oder keine eigene Domain vorhanden, kann Rocket eine sichere TLS-Verbindung auch mittels
+selbst-signierten Zertifikaten bereitstellen.
+
+Zunächst muss hierfür OpenSSL installiert sein (`sudo apt install openssl`/`sudo pacman -S openssl`). 
 
 Die nun folgenden Befehle sollten im `tls/`-Verzeichnis ausgeführt werden. Alternativ können sie angepasst werden, um das 
 Zertifikat mit anderen Voreinstellungen und/oder an einem anderen Ort zu speichern.
@@ -178,8 +193,9 @@ openssl x509 -signkey rnas.key -in rnas.csr -req -days 365 -out rnas.crt
 
 ## General information
 
-rNAS is an extremely simple, lightweight NAS server suitable for use in a private environment. The goal of the included 
-web interface is to be able to access the NAS from any Internet-enabled device without system-specific integrations.
+rNAS is an extremely simple, lightweight NAS server suitable for use in a non publicly exposed environment. The goal
+of the included web interface is to be able to access the NAS from any Internet-enabled device without system-specific
+integrations.
 
 In addition, the code should be kept particularly short and clear, so that it is always possible to understand what 
 happens at which point with the processed data, as well as to ensure easy extensibility.
@@ -192,9 +208,8 @@ setup of the server and TOML files are used for other configuration options.
 Any hardware that can run Linux as well as the Rust compiler is suitable for the rNAS server. A list of compatible 
 architectures can be found [here](https://doc.rust-lang.org/nightly/rustc/platform-support.html).
 
-As with its predecessor, [Python-RaspiNAS](https://github.com/nitrescov/Python-RaspiNAS), there is no fixed update or 
-release cycle for the project. However, I am always happy to receive suggestions for improvements, feature requests or 
-criticism.
+There is no fixed update or release cycle for the project. However, I am always happy to receive suggestions for
+improvements, feature requests or criticism.
 
 ## Requirements
 
@@ -267,7 +282,7 @@ should also run with the default settings.
 - `config.toml`:
 
 | parameter         | value (explanation)                                                                                                                               |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | language          | Language configuration (`de` or `en`)                                                                                                             |
 | owner             | Server name (e.g. name of the owner)                                                                                                              |
 | storage_path      | Path to store the user directories and the `tmp/` folder                                                                                          |
@@ -284,14 +299,16 @@ should also run with the default settings.
 
 - `Rocket.toml` ([more information](https://rocket.rs/v0.5-rc/guide/configuration/)):
 
-| parameter      | value (explanation)                                                                                                                                                                                       |
-|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| port           | Port for the HTTPS communication (usually 443, but then the server must be run as root)                                                                                                                   |
-| secret_key     | Key to secure the login cookie (**must not be left at the default value!**)                                                                                                                               |
-| default.limits | Maximum size of exchanged data (see the [documentation](https://api.rocket.rs/v0.5-rc/rocket/data/struct.Limits.html#built-in-limits), SI units to the base 10 (e.g. 32kB) or to the base 2 (e.g. 32KiB)) |
-| certs          | Path of the SSL certificate file                                                                                                                                                                          |
-| key            | Path of the SSL key file                                                                                                                                                                                  |
-| address        | IP address from which requests are received (`0.0.0.0` - all, `127.0.0.1` - only local machine)                                                                                                           |
+| parameter          | value (explanation)                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| port               | Port for the HTTPS communication (usually 443, but then the server must be run as root)                                                                                                                   |
+| secret_key         | Key to secure the login cookie (**must not be left at the default value!**)                                                                                                                               |
+| default.limits     | Maximum size of exchanged data (see the [documentation](https://api.rocket.rs/v0.5-rc/rocket/data/struct.Limits.html#built-in-limits), SI units to the base 10 (e.g. 32kB) or to the base 2 (e.g. 32KiB)) |
+| certs              | Path of the SSL certificate file                                                                                                                                                                          |
+| key                | Path of the SSL key file                                                                                                                                                                                  |
+| address            | IP address from which requests are received (`0.0.0.0` - all, `127.0.0.1` - only local machine)                                                                                                           |
+| ip_header          | HTTP header that allows the server to obtain the actual client IP address behind a reverse proxy                                                                                                          |
+| proxy_proto_header | HTTP header that allows the server to determine whether the connection is encrypted when behind a reverse proxy                                                                                           |
 
 ### 4. Generate a new secret key:
 
@@ -301,9 +318,23 @@ The key can be generated as follows:
 openssl rand -base64 32
 ```
 
-### 5. Create a self-signed SSL certificate (more details at [Baeldung](https://www.baeldung.com/openssl-self-signed-cert)):
+### 5. Using a secure TLS connection
 
-First, OpenSSL needs to be installed (`sudo apt install openssl`/`sudo pacman -S openssl`).
+#### 5.1 Option 1: Use a reverse proxy server
+
+The use of a reverse proxy is recommended for a secure, encrypted connection to the server.
+
+A sample configuration for the [Caddy server](https://caddyserver.com/docs/) is supplied at `proxy/Caddyfile` for a particularly easy setup.
+This can be copied to `/etc/caddy/Caddyfile` after installing Caddy and **inserting your own domain**.
+
+The sample configuration can also be used as a template for setting up another proxy server such as NGINX.
+
+#### 5.2 Option 2: Create a self-signed SSL certificate (more details at [Baeldung](https://www.baeldung.com/openssl-self-signed-cert)):
+
+If the use of a reverse proxy is not desired or no own domain is available, Rocket can also provide a secure TLS connection using self-signed
+certificates.
+
+Therefore, OpenSSL needs to be installed (`sudo apt install openssl`/`sudo pacman -S openssl`).
 
 The following commands should be executed in the `tls/` directory. Alternatively, they can be customized to save the 
 certificate with different preferences and/or in a different location.

@@ -1,6 +1,6 @@
 [default]
-port = 8443
-# Note: Make sure to generate a new random key for production use!
+port = 8080
+# Make sure to generate a new random key for production use!
 secret_key = "e/33o7rRLoNpNn/xL+rdww37tb+YfvhUUtpF1H1bqu4="
 
 [default.limits]
@@ -9,12 +9,17 @@ data-form = "16 GiB"
 file = "16 GiB"
 # Limits for specific files, e.g. "file/zip" = "32 GiB"
 
-[default.tls]
-certs = "tls/rnas.crt"
-key = "tls/rnas.key"
+# Add the following lines to use a self-signed SSL certificate
+# [default.tls]
+# certs = "tls/rnas.crt"
+# key = "tls/rnas.key"
 
 [debug]
 address = "127.0.0.1"
 
 [release]
-address = "0.0.0.0"
+# Change the address to "0.0.0.0" if no reverse proxy is used
+address = "127.0.0.1"
+# Remove the following header options if no reverse proxy is used
+ip_header = "X-Real-IP"
+proxy_proto_header = "X-Forwarded-Proto"
