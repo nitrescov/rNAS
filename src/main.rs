@@ -242,6 +242,14 @@ fn list_directory(cookies: &CookieJar<'_>, path: DotPathBuf) -> RawHtml<String> 
                 }
             };
 
+            // Create the top navigation bar
+            let mut current_link = "/files".to_owned();
+            let mut top_bar = String::new();
+            for part in path_string.split("/") {
+                current_link.push_str(format!("/{0}", part).as_str());
+                top_bar.push_str(format!("/ <a href=\"{0}\" style=\"color:{1};\">{2}</a> ", current_link, CONFIG.accent_foreground, part).as_str());
+            }
+
             // Get and sort the files and subdirectories from the given path
             let mut files = Vec::new();
             let mut directories = Vec::new();
@@ -347,7 +355,7 @@ fn list_directory(cookies: &CookieJar<'_>, path: DotPathBuf) -> RawHtml<String> 
                 <div style=\"background-color:{1}; position:sticky; top:0px; width:100%; padding-top:16px; padding-bottom:8px\"> \
                     <h1 style=\"font-family:sans-serif; font-size:24px; text-align:center; font-weight:bold; color:{2}; background-color:{3}; \
                             border-radius:10px; margin:16px; margin-top:0px; margin-bottom:8px; padding:8px; box-shadow:2px 2px 4px {4}\"> \
-                        ~ / {26} \
+                        {26} \
                     </h1> \
                     <div style=\"text-align:center\"> \
                         <form action=\"/files/{20}\" style=\"margin:8px; display:inline-block\"> \
@@ -413,7 +421,7 @@ fn list_directory(cookies: &CookieJar<'_>, path: DotPathBuf) -> RawHtml<String> 
                 CONFIG.language, CONFIG.background, CONFIG.accent_foreground, CONFIG.accent_background, CONFIG.shadows, CONFIG.owner, CONFIG.foreground, CONFIG.input,
                 menu_content.0, menu_content.1, menu_content.2, menu_content.3, menu_content.4, menu_content.5, menu_content.6, menu_content.7, menu_content.8,
                 menu_content.9, menu_content.10, menu_content.11, username, dir_list, file_list, directories.len(), files.len(), VERSION,
-                path_string.replace("/", " / "), parent_path, path_string, percent, menu_content.12
+                top_bar, parent_path, path_string, percent, menu_content.12
             );
 
             RawHtml(directory_view)
